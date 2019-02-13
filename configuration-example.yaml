@@ -1,4 +1,3 @@
-
 slack:
     token: xoxp-xxxxxxxxxxxxxx
 
@@ -10,7 +9,14 @@ mail:
     password: xxxxxxxxx
 
 channels:
-    # Maps channels to a particular email address
+  blacklist:
+    ## excluded channels
+    - dev-prs
+  map:
+    ## Maps channels to a particular email address
     general: users@my.project.org
     dev: dev@my.project.org
     random: users@my.project.org
+  catchall:
+    ## any channel that is not explictly mapped or blacklisted will map to this email address
+    dev@my.project.org
