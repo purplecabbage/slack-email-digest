@@ -36,15 +36,15 @@ def parse_args_and_config(config):
     if 'catchall' in conf['channels'] and not isinstance(conf['channels']['catchall'], str):
         print('Error: catchall must have one email address.')
         return
-    if 'blacklist' not in conf['channels'] or not conf['channels']['blacklist']:
-        conf['channels']['blacklist'] = []
+    if 'exclude' not in conf['channels'] or not conf['channels']['exclude']:
+        conf['channels']['exclude'] = []
     if 'map' not in conf['channels'] or not conf['channels']['map']:
         conf['channels']['map'] = []
     if type(conf['channels']['map']) is not list:
         print('Error: channels map must be a list.')
         return
-    if type(conf['channels']['blacklist']) is not list:
-        print('Error: channels blacklist must be a list.')
+    if type(conf['channels']['exclude']) is not list:
+        print('Error: channels excluded must be a list.')
         return
 
     args.conf = conf
@@ -80,7 +80,7 @@ def filter_channels(slack, conf):
     sendTo = {}
     for channel in channels:
         name = channel['name']
-        if name in conf['channels']['blacklist']:
+        if name in conf['channels']['exclude']:
             print('IGNORE channel: #%s' % name)
             continue
         if name in conf['channels']['map']:
