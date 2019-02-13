@@ -1,4 +1,4 @@
-[![Build Status](https://api.travis-ci.com/rabbah/slack-email-digest.svg?branch=master)](https://api.travis-ci.com/rabbah/slack-email-digest.svg?branch=master) 
+[![Build Status](https://api.travis-ci.com/rabbah/slack-email-digest.svg?branch=master)](https://travis-ci.com/rabbah/slack-email-digest)
 
 ### Slack to Email digest
 
