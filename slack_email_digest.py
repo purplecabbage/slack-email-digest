@@ -58,7 +58,7 @@ def filter_channels(slack, conf):
             continue
     return filtered, sendTo
 
-def get_digests(slack, channels, users, oldest, latest):
+def get_digests(slack, channels, users, oldest, latest, reactions):
     digests = {}
 
     for name, id in channels.items():
@@ -82,7 +82,8 @@ def get_digests(slack, channels, users, oldest, latest):
             text = re.sub(r'<@(\w+)>', lambda m: '@' + users[m.group(1)], m['text'])
 
             digest += '%s - %s: %s\n' % (date, sender, text)
-            for reaction in m.get('reactions', []):
+            if reactions:
+              for reaction in m.get('reactions', []):
                 digest += '%s : %s\n' % (reaction['name'], ', '.join(map(users.get, reaction['users'])))
             digest += '----\n'
         digests[name] = digest
@@ -123,11 +124,14 @@ def main(params):
     print('Digesting messages between %s and %s' % (format_time(oldest), format_time(latest)))
 
     conf = get_conf(params)
+    reactions = conf['slack']['reactions']
+    print('Include reactions: %s', reactions)
+
     slack = slacker.Slacker(conf['slack']['token'])
     channels, sendTo = filter_channels(slack, conf)
     users = get_usernames(slack)
 
-    digests = get_digests(slack, channels, users, oldest, latest)
+    digests = get_digests(slack, channels, users, oldest, latest, reactions)
     for channel, digest in digests.items():
         if digest and sendTo[channel]:
             sendto = sendTo[channel]

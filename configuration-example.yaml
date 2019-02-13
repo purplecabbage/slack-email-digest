@@ -1,5 +1,6 @@
 slack:
     token: xoxp-xxxxxxxxxxxxxx
+    reactions: false
 
 mail:
     fromAddress: '"My Slack" <my.slack@gmail.com>'
