@@ -9,14 +9,13 @@ import datetime
 import smtplib
 from email.mime.text import MIMEText
 
-def send_digest(conf, channel, address, digest):
+def send_digest(conf, channel, address, digest, date):
     print('Sending digest: #%s -> %s' % (channel, address))
 
     msg = MIMEText(digest, _charset='utf-8')
     msg['From'] = conf['mail']['fromAddress']
     msg['To'] = address
-    msg['Subject'] = 'Slack digest for #%s [%s]' % (
-        channel, datetime.datetime.now().strftime('%Y-%m-%d'))
+    msg['Subject'] = 'Slack digest for #%s [%s]' % (channel, format_day(date))
     server = smtplib.SMTP(conf['mail']['smtp'])
     if conf['mail']['useTLS']:
         server.starttls()
@@ -119,6 +118,9 @@ def timerange(now):
 def format_time(ts):
     return datetime.datetime.utcfromtimestamp(float(ts)).strftime('%Y-%m-%d %H:%M:%S UTC')
 
+def format_day(ts):
+    return datetime.datetime.utcfromtimestamp(float(ts)).strftime('%Y-%m-%d')
+
 def main(params):
     oldest, latest = timerange(time.time())
     print('Digesting messages between %s and %s' % (format_time(oldest), format_time(latest)))
@@ -135,7 +137,7 @@ def main(params):
     for channel, digest in digests.items():
         if digest and sendTo[channel]:
             sendto = sendTo[channel]
-            send_digest(conf, channel, sendto, digest)
+            send_digest(conf, channel, sendto, digest, oldest)
 
 config = os.environ['CONFIGURATION'] if 'CONFIGURATION' in os.environ else open('configuration.yaml')
 main(config)
