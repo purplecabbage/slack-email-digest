@@ -122,12 +122,14 @@ def format_day(ts):
     return datetime.datetime.utcfromtimestamp(float(ts)).strftime('%Y-%m-%d')
 
 def main(params):
-    oldest, latest = timerange(time.time())
+    now = time.time()
+    oldest, latest = timerange(now)
+    print('Running on %s' % format_day(now))
     print('Digesting messages between %s and %s' % (format_time(oldest), format_time(latest)))
 
     conf = get_conf(params)
     reactions = conf['slack']['reactions']
-    print('Include reactions: %s', reactions)
+    print('Include reactions: %s' % reactions)
 
     slack = slacker.Slacker(conf['slack']['token'])
     channels, sendTo = filter_channels(slack, conf)
