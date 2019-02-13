@@ -1,13 +1,54 @@
 #!/usr/bin/env python
 
+import argparse
+try:
+    import argcomplete
+except ImportError:
+    argcomplete = False
 import os
 import slacker
 import yaml
 import time
 import re
+import sys
 import datetime
 import smtplib
 from email.mime.text import MIMEText
+
+def parse_args_and_config(config):
+    parser = argparse.ArgumentParser(description='Slack to Email Digest')
+    parser.add_argument('-v', '--verbose', help='verbose output', action='store_true')
+    parser.add_argument('-n', '--dryrun', help='verbose output', action='store_true')
+    parser.add_argument('-d', '--daysback', help='number of days back to digest', type=int, default=1)
+
+    if argcomplete:
+        argcomplete.autocomplete(parser)
+    args = parser.parse_args()
+
+    if args.daysback < 1:
+        print('Error: daysback must be at least 1.')
+        return
+
+    conf = yaml.load(config)
+    if 'slack' not in conf or 'mail' not in conf or 'channels' not in conf:
+        print('Error: bad configuration, need "channels", "slack" and "mail" properties.')
+        return
+    if 'catchall' in conf['channels'] and not isinstance(conf['channels']['catchall'], str):
+        print('Error: catchall must have one email address.')
+        return
+    if 'blacklist' not in conf['channels'] or not conf['channels']['blacklist']:
+        conf['channels']['blacklist'] = []
+    if 'map' not in conf['channels'] or not conf['channels']['map']:
+        conf['channels']['map'] = []
+    if type(conf['channels']['map']) is not list:
+        print('Error: channels map must be a list.')
+        return
+    if type(conf['channels']['blacklist']) is not list:
+        print('Error: channels blacklist must be a list.')
+        return
+
+    args.conf = conf
+    return args
 
 def send_digest(conf, channel, address, digest, date):
     print('Sending digest: #%s -> %s' % (channel, address))
@@ -88,28 +129,8 @@ def get_digests(slack, channels, users, oldest, latest, reactions):
         digests[name] = digest
     return digests
 
-def get_conf(params):
-    conf = yaml.load(params)
-    if 'slack' not in conf or 'mail' not in conf or 'channels' not in conf:
-        print('Error: bad configuration, need "channels", "slack" and "mail" properties.')
-        return -1
-    if 'catchall' in conf['channels'] and not isinstance(conf['channels']['catchall'], str):
-        print('Error: catchall must have one email address.')
-        return -1
-    if 'blacklist' not in conf['channels'] or not conf['channels']['blacklist']:
-        conf['channels']['blacklist'] = []
-    if 'map' not in conf['channels'] or not conf['channels']['map']:
-        conf['channels']['map'] = []
-    if type(conf['channels']['map']) is not list:
-        print('Error: channels map must be a list.')
-        return -1
-    if type(conf['channels']['blacklist']) is not list:
-        print('Error: channels blacklist must be a list.')
-        return -1
-    return conf
-
-def timerange(now):
-    day = 24 * 3600
+def timerange(now, daysback):
+    day = daysback * 24 * 3600
     oldest = now - day
     oldest = oldest - (oldest % day)
     latest = now - (now % day) - 1
@@ -121,25 +142,29 @@ def format_time(ts):
 def format_day(ts):
     return datetime.datetime.utcfromtimestamp(float(ts)).strftime('%Y-%m-%d')
 
-def main(params):
+def main(args):
     now = time.time()
-    oldest, latest = timerange(now)
+    oldest, latest = timerange(now, args.daysback)
     print('Running on %s' % format_day(now))
     print('Digesting messages between %s and %s' % (format_time(oldest), format_time(latest)))
 
-    conf = get_conf(params)
-    reactions = conf['slack']['reactions']
+    reactions = args.conf['slack']['reactions']
     print('Include reactions: %s' % reactions)
 
-    slack = slacker.Slacker(conf['slack']['token'])
-    channels, sendTo = filter_channels(slack, conf)
+    slack = slacker.Slacker(args.conf['slack']['token'])
+    channels, sendTo = filter_channels(slack, args.conf)
     users = get_usernames(slack)
 
-    digests = get_digests(slack, channels, users, oldest, latest, reactions)
-    for channel, digest in digests.items():
-        if digest and sendTo[channel]:
-            sendto = sendTo[channel]
-            send_digest(conf, channel, sendto, digest, oldest)
+    if not args.dryrun:
+        digests = get_digests(slack, channels, users, oldest, latest, reactions)
+        for channel, digest in digests.items():
+            if digest and sendTo[channel]:
+                sendto = sendTo[channel]
+                send_digest(args.conf, channel, sendto, digest, oldest)
 
-config = os.environ['CONFIGURATION'] if 'CONFIGURATION' in os.environ else open('configuration.yaml')
-main(config)
+conf = os.environ['CONFIGURATION'] if 'CONFIGURATION' in os.environ else open('configuration.yaml')
+args = parse_args_and_config(conf)
+if args:
+    main(args)
+else:
+    sys.exit(-1)
