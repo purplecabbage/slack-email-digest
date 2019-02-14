@@ -98,7 +98,17 @@ def filter_channels(slack, conf):
             continue
     return filtered, sendTo
 
-def get_digests(slack, channels, users, oldest, latest, reactions):
+def get_digests(slack, channels, users, oldest, latest, reactions, joins_leaves):
+    def exclude_message(m):
+        if m['type'] != 'message':
+            return True
+        if 'subtype' in m:
+            if m['subtype'] == 'bot_message':
+                return True
+            if m['subtype'] == 'channel_join' or m['subtype'] == 'channel_leave':
+                return joins_leaves == False # omit if joins/leaves is false
+        return False
+
     digests = {}
 
     for name, id in channels.items():
@@ -109,9 +119,9 @@ def get_digests(slack, channels, users, oldest, latest, reactions):
                                           count=1000)
         digest = ''
         for m in reversed(messages.body['messages']):
-            if not m['type'] == 'message' or ('subtype' in m and m['subtype'] == 'bot_message'):
+            if exclude_message(m):
                 continue
-        
+
             user = m.get('user')
             if not user:
                 user = m['comment']['user']
@@ -130,8 +140,9 @@ def get_digests(slack, channels, users, oldest, latest, reactions):
     return digests
 
 def timerange(now, daysback):
-    day = daysback * 24 * 3600
-    oldest = now - day
+    day = 24 * 3600
+    days = daysback * day
+    oldest = now - days
     oldest = oldest - (oldest % day)
     latest = now - (now % day) - 1
     return oldest, latest
@@ -149,18 +160,22 @@ def main(args):
     print('Digesting messages between %s and %s' % (format_time(oldest), format_time(latest)))
 
     reactions = args.conf['slack']['reactions']
+    joins_leaves = args.conf['slack']['joins_leaves']
     print('Include reactions: %s' % reactions)
+    print('Include joins: %s' % joins_leaves)
 
     slack = slacker.Slacker(args.conf['slack']['token'])
     channels, sendTo = filter_channels(slack, args.conf)
     users = get_usernames(slack)
 
-    if not args.dryrun:
-        digests = get_digests(slack, channels, users, oldest, latest, reactions)
-        for channel, digest in digests.items():
-            if digest and sendTo[channel]:
-                sendto = sendTo[channel]
+    digests = get_digests(slack, channels, users, oldest, latest, reactions, joins_leaves)
+    for channel, digest in digests.items():
+        if digest and sendTo[channel]:
+            sendto = sendTo[channel]
+            if not args.dryrun:
                 send_digest(args.conf, channel, sendto, digest, oldest)
+            else:
+                print(channel, sendto, len(digest))
 
 conf = os.environ['CONFIGURATION'] if 'CONFIGURATION' in os.environ else open('configuration.yaml')
 args = parse_args_and_config(conf)

@@ -1,6 +1,7 @@
 slack:
-    token: xoxp-xxxxxxxxxxxxxx
-    reactions: false
+    token: xoxp-xxxxxxxxxxxxxx    # slack API token
+    reactions: false              # omit reactions if false
+    joins_leaves: false           # omit channel joins/leaves if false
 
 mail:
     fromAddress: '"My Slack" <my.slack@gmail.com>'
