@@ -21,5 +21,5 @@ channels:
     dev: dev@my.project.org
     random: users@my.project.org
   catchall:
-    ## Any channel that is not explicitly mapped or blacklisted will map to this email address
+    ## Any channel that is not explicitly mapped or excluded will map to this email address
     dev@my.project.org

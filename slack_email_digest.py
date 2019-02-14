@@ -15,11 +15,12 @@ import datetime
 import smtplib
 from email.mime.text import MIMEText
 
-def parse_args_and_config(config):
+def parse_args_and_config():
     parser = argparse.ArgumentParser(description='Slack to Email Digest')
     parser.add_argument('-v', '--verbose', help='verbose output', action='store_true')
     parser.add_argument('-n', '--dryrun', help='verbose output', action='store_true')
-    parser.add_argument('-d', '--daysback', help='number of days back to digest', type=int, default=1)
+    parser.add_argument('-d', '--daysback', help='number of days back to digest', metavar = 'N', type=int, default=1)
+    parser.add_argument('-c', '--conf', help='YAML configuration file', metavar='YAML', type=argparse.FileType('r'), required=True)
 
     if argcomplete:
         argcomplete.autocomplete(parser)
@@ -29,7 +30,7 @@ def parse_args_and_config(config):
         print('Error: daysback must be at least 1.')
         return
 
-    conf = yaml.load(config)
+    conf = yaml.load(args.conf)
     if 'slack' not in conf or 'mail' not in conf or 'channels' not in conf:
         print('Error: bad configuration, need "channels", "slack" and "mail" properties.')
         return
@@ -187,8 +188,7 @@ def main(args):
             else:
                 print(channel, sendto, len(digest))
 
-conf = os.environ['CONFIGURATION'] if 'CONFIGURATION' in os.environ else open('configuration.yaml')
-args = parse_args_and_config(conf)
+args = parse_args_and_config()
 if args:
     main(args)
 else:
