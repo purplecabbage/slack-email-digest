@@ -56,7 +56,7 @@ def send_digest(conf, channel, address, digest, date):
     msg = MIMEText(digest, _charset='utf-8')
     msg['From'] = conf['mail']['fromAddress']
     msg['To'] = address
-    msg['Subject'] = 'Slack digest for #%s [%s]' % (channel, format_day(date))
+    msg['Subject'] = '[slack-digest] [%s] #%s' % (format_day(date), channel)
     server = smtplib.SMTP(conf['mail']['smtp'])
     if conf['mail']['useTLS']:
         server.starttls()
@@ -98,7 +98,7 @@ def filter_channels(slack, conf):
             continue
     return filtered, sendTo
 
-def get_digests(slack, channels, users, oldest, latest, reactions, joins_leaves):
+def get_digests(conf, slack, channels, users, oldest, latest):
     def exclude_message(m):
         if m['type'] != 'message':
             return True
@@ -106,7 +106,7 @@ def get_digests(slack, channels, users, oldest, latest, reactions, joins_leaves)
             if m['subtype'] == 'bot_message':
                 return True
             if m['subtype'] == 'channel_join' or m['subtype'] == 'channel_leave':
-                return joins_leaves == False # omit if joins/leaves is false
+                return conf.joins_leaves == False # omit if joins/leaves is false
         return False
 
     digests = {}
@@ -132,10 +132,16 @@ def get_digests(slack, channels, users, oldest, latest, reactions, joins_leaves)
             text = re.sub(r'<@(\w+)>', lambda m: '@' + users[m.group(1)], m['text'])
 
             digest += '%s - %s: %s\n' % (date, sender, text)
-            if reactions:
-              for reaction in m.get('reactions', []):
-                digest += '%s : %s\n' % (reaction['name'], ', '.join(map(users.get, reaction['users'])))
+            if conf.reactions:
+                for reaction in m.get('reactions', []):
+                    digest += '%s : %s\n' % (reaction['name'], ', '.join(map(users.get, reaction['users'])))
+
+            if conf.permalinks:
+                url = slack.chat.get_permalink(channel=id, message_ts=m['ts'])
+                digest += '%s\n' % url.body['permalink']
+
             digest += '----\n'
+
         digests[name] = digest
     return digests
 
@@ -153,6 +159,10 @@ def format_time(ts):
 def format_day(ts):
     return datetime.datetime.utcfromtimestamp(float(ts)).strftime('%Y-%m-%d')
 
+class objectify(object):
+    def __init__(self, d):
+        self.__dict__ = d
+
 def main(args):
     now = time.time()
     oldest, latest = timerange(now, args.daysback)
@@ -168,7 +178,7 @@ def main(args):
     channels, sendTo = filter_channels(slack, args.conf)
     users = get_usernames(slack)
 
-    digests = get_digests(slack, channels, users, oldest, latest, reactions, joins_leaves)
+    digests = get_digests(objectify(args.conf['slack']), slack, channels, users, oldest, latest)
     for channel, digest in digests.items():
         if digest and sendTo[channel]:
             sendto = sendTo[channel]

@@ -2,6 +2,7 @@ slack:
     token: xoxp-xxxxxxxxxxxxxx    # slack API token
     reactions: false              # omit reactions if false
     joins_leaves: false           # omit channel joins/leaves if false
+    permalinks: false             # include permalinks for each message
 
 mail:
     fromAddress: '"My Slack" <my.slack@gmail.com>'
