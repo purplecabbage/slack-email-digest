@@ -47,6 +47,11 @@ def parse_args_and_config():
     if type(conf['channels']['exclude']) is not list:
         print('Error: channels excluded must be a list.')
         return
+    if 'ignore' not in conf['slack'] or not conf['slack']['ignore']:
+        conf['slack']['ignore'] = []
+    if type(conf['slack']['ignore']) is not list:
+        print('Error: messages to ignore must be a list.')
+        return
 
     args.conf = conf
     return args
@@ -108,6 +113,10 @@ def get_digests(conf, slack, channels, users, oldest, latest):
                 return True
             if m['subtype'] == 'channel_join' or m['subtype'] == 'channel_leave':
                 return conf.joins_leaves == False # omit if joins/leaves is false
+        elif m['text'] and conf.ignore:
+            for s in conf.ignore:
+                if m['text'].startswith(s):
+                    return True
         return False
 
     digests = {}

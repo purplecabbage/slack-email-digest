@@ -3,6 +3,9 @@ slack:
     reactions: false              # omit reactions if false
     joins_leaves: false           # omit channel joins/leaves if false
     permalinks: false             # include permalinks for each message
+    ignore:                       # ignore any message that starts with given text
+      - 'Ignore message starting with this text'
+      - 'Also ignore me'
 
 mail:
     fromAddress: '"My Slack" <my.slack@gmail.com>'
