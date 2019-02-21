@@ -39,10 +39,10 @@ def parse_args_and_config():
         return
     if 'exclude' not in conf['channels'] or not conf['channels']['exclude']:
         conf['channels']['exclude'] = []
-    if 'map' not in conf['channels'] or not conf['channels']['map']:
-        conf['channels']['map'] = []
-    if type(conf['channels']['map']) is not list:
-        print('Error: channels map must be a list.')
+    if 'include' not in conf['channels'] or not conf['channels']['include']:
+        conf['channels']['include'] = []
+    if type(conf['channels']['include']) is not dict:
+        print('Error: map of channels to include must be a dictionary.')
         return
     if type(conf['channels']['exclude']) is not list:
         print('Error: channels excluded must be a list.')
@@ -84,8 +84,8 @@ def filter_channels(slack, conf):
         if name in conf['channels']['exclude']:
             print('IGNORE channel: #%s' % name)
             continue
-        if name in conf['channels']['map']:
-            sendto = conf['channels']['map'][name]
+        if name in conf['channels']['include']:
+            sendto = conf['channels']['include'][name]
             print('Digest channel: #%s -> %s' % (name, sendto))
             filtered[name] = channel['id']
             sendTo[name] = sendto
