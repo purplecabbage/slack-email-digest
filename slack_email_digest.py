@@ -40,7 +40,7 @@ def parse_args_and_config():
     if 'exclude' not in conf['channels'] or not conf['channels']['exclude']:
         conf['channels']['exclude'] = []
     if 'include' not in conf['channels'] or not conf['channels']['include']:
-        conf['channels']['include'] = []
+        conf['channels']['include'] = {}
     if type(conf['channels']['include']) is not dict:
         print('Error: map of channels to include must be a dictionary.')
         return
