@@ -3,8 +3,8 @@ python:
 - '3.6'
 before_install:
 - openssl aes-256-cbc -K $encrypted_2883679a12ac_key -iv $encrypted_2883679a12ac_iv
-  -in apache-configuration.yaml.enc -out apache-configuration.yaml -d
+  -in cordova.yaml.enc -out cordova.yaml -d
 install:
 - pip install -r requirements.txt
 script:
-- python slack_email_digest.py -c apache-configuration.yaml
+- python slack_email_digest.py -c cordova.yaml
